@@ -1,0 +1,5 @@
+[package]
+build_command = ./configure && cmake --build build
+test_command = cd testing && btest -c btest.cfg
+summary = NATS.io based cluster backend
+description =
