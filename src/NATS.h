@@ -18,7 +18,8 @@ class NATSManagerImpl;
 
 class NATSBackend : public cluster::ThreadedBackend {
 public:
-    using ThreadedBackend::ThreadedBackend;
+    NATSBackend(std::unique_ptr<EventSerializer> es, std::unique_ptr<LogSerializer> ls)
+        : cluster::ThreadedBackend(std::move(es), std::move(ls)) {}
 
     void HandleSubscriptionMessage(natsSubscription* sub, natsMsg* msg);
 
@@ -32,9 +33,9 @@ public:
 
     void HandleConnectionCallback(ConnectionEvent ev);
 
-    static Backend* Instantiate(std::unique_ptr<EventSerializer> event_serializer,
-                                std::unique_ptr<LogSerializer> log_serializer) {
-        return new NATSBackend(std::move(event_serializer), std::move(log_serializer));
+    static std::unique_ptr<Backend> Instantiate(std::unique_ptr<EventSerializer> event_serializer,
+                                                std::unique_ptr<LogSerializer> log_serializer) {
+        return std::make_unique<NATSBackend>(std::move(event_serializer), std::move(log_serializer));
     }
 
 private:
