@@ -13,7 +13,6 @@
 #include "zeek/ID.h"
 #include "zeek/Val.h"
 #include "zeek/cluster/Backend.h"
-#include "zeek/logging/Manager.h"
 
 
 namespace zeek {
@@ -89,7 +88,7 @@ void NATSBackend::HandleSubscriptionMessage(natsSubscription* sub, natsMsg* msg)
 
     natsMsg_Destroy(msg);
 
-    QueueForProcessing(QueueMessages{qm});
+    QueueForProcessing(std::move(qm));
 }
 void NATSBackend::HandleSubscriptionError(natsSubscription* sub, natsStatus err) {
     // What should we do here?>
@@ -127,8 +126,6 @@ void NATSBackend::HandleConnectionCallback(ConnectionEvent ev) {
 
 
 void NATSBackend::DoInitPostScript() {
-    ThreadedBackend::DoInitPostScript();
-
     natsStatus status = NATS_OK;
 
     if ( status = natsOptions_Create(&options); status != NATS_OK ) {
@@ -224,11 +221,18 @@ bool NATSBackend::DoInit() {
     // subscriptions now.
     for ( const auto& subscription : subscriptions ) {
         natsSubscription* sub = nullptr;
+        auto& cb = subscription.cb;
         if ( ! TrySubscribe(subscription.subject, &sub) ) {
             // Not sure what to do here, seems almost fatal can there's not
             // a great way to report it back.
             zeek::reporter->Error("Pending subscription failed in Connect(): '%s' %s", subscription.subject.c_str(),
                                   nats_GetLastError(nullptr));
+            if ( cb )
+                cb(subscription.subject, {CallbackStatus::Error, "TrySubscribe() failed"});
+        }
+        else {
+            if ( cb )
+                cb(subscription.subject, {CallbackStatus::Success});
         }
     }
 
@@ -285,9 +289,9 @@ bool NATSBackend::DoPublishEvent(const std::string& topic, const std::string& fo
     return status == NATS_OK;
 }
 
-bool NATSBackend::DoSubscribe(const std::string& topic_prefix) {
+bool NATSBackend::DoSubscribe(const std::string& topic_prefix, SubscribeCallback cb) {
     if ( ! Connected() ) {
-        subscriptions.push_back({topic_prefix, nullptr});
+        subscriptions.push_back({topic_prefix, nullptr, std::move(cb)});
         return false;
     }
 
@@ -299,8 +303,13 @@ bool NATSBackend::DoSubscribe(const std::string& topic_prefix) {
     natsSubscription* sub;
     if ( ! TrySubscribe(topic_prefix, &sub) ) {
         // Unclear what to do. Just return false for now.
+        if ( cb )
+            cb(topic_prefix, {Backend::CallbackStatus::Error, "TrySubscribe() failed"});
         return false;
     }
+
+    if ( cb )
+        cb(topic_prefix, {Backend::CallbackStatus::Success});
 
     subscriptions.push_back({topic_prefix, sub});
 

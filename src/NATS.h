@@ -18,8 +18,9 @@ class NATSManagerImpl;
 
 class NATSBackend : public cluster::ThreadedBackend {
 public:
-    NATSBackend(std::unique_ptr<EventSerializer> es, std::unique_ptr<LogSerializer> ls)
-        : cluster::ThreadedBackend(std::move(es), std::move(ls)) {}
+    NATSBackend(std::unique_ptr<EventSerializer> es, std::unique_ptr<LogSerializer> ls,
+                std::unique_ptr<cluster::detail::EventHandlingStrategy> ehs)
+        : cluster::ThreadedBackend(std::move(es), std::move(ls), std::move(ehs)) {}
 
     void HandleSubscriptionMessage(natsSubscription* sub, natsMsg* msg);
 
@@ -33,9 +34,9 @@ public:
 
     void HandleConnectionCallback(ConnectionEvent ev);
 
-    static std::unique_ptr<Backend> Instantiate(std::unique_ptr<EventSerializer> event_serializer,
-                                                std::unique_ptr<LogSerializer> log_serializer) {
-        return std::make_unique<NATSBackend>(std::move(event_serializer), std::move(log_serializer));
+    static std::unique_ptr<Backend> Instantiate(std::unique_ptr<EventSerializer> es, std::unique_ptr<LogSerializer> ls,
+                                                std::unique_ptr<cluster::detail::EventHandlingStrategy> ehs) {
+        return std::make_unique<NATSBackend>(std::move(es), std::move(ls), std::move(ehs));
     }
 
 private:
@@ -48,14 +49,12 @@ private:
     bool DoPublishEvent(const std::string& topic, const std::string& format,
                         const cluster::detail::byte_buffer& buf) override;
 
-    bool DoSubscribe(const std::string& topic_prefix) override;
+    bool DoSubscribe(const std::string& topic_prefix, SubscribeCallback cb) override;
 
     bool DoUnsubscribe(const std::string& topic_prefix) override;
 
     bool DoPublishLogWrites(const logging::detail::LogWriteHeader& header, const std::string& format,
                             cluster::detail::byte_buffer& buf) override;
-
-    const char* Tag() override { return "NATS"; }
 
     bool Connected() const { return conn != nullptr; }
 
@@ -77,6 +76,7 @@ private:
     struct Subscription {
         std::string subject;
         natsSubscription* sub;
+        cluster::Backend::SubscribeCallback cb;
     };
 
     std::vector<Subscription> subscriptions;
