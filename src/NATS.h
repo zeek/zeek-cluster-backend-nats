@@ -64,6 +64,7 @@ private:
     bool logger_queue_consume = false;
     std::string logger_queue_name;
     std::string logger_queue_subject_prefix;
+    int64_t flush_timeout_ms = 500;
     natsSubscription* logger_queue_subscription = nullptr;
 
     EventHandlerPtr event_nats_connected;

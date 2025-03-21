@@ -18,6 +18,10 @@ export {
 	## throughput over latency. See the nats.c docs for details.
 	const send_asap = F &redef;
 
+	## The connection flushing timeout when shutting down
+	## a NATS backend.
+	const flush_timeout = 500msec &redef;
+
 	## Internal event announcing presence of a node.
 	global hello: event(name: string, id: string);
 

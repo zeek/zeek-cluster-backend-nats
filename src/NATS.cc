@@ -188,6 +188,10 @@ void NATSBackend::DoInitPostScript() {
     logger_queue_name = zeek::id::find_val<zeek::StringVal>("Cluster::Backend::NATS::logger_queue_name")->ToStdString();
     logger_queue_subject_prefix =
         zeek::id::find_val<zeek::StringVal>("Cluster::Backend::NATS::logger_queue_subject_prefix")->ToStdString();
+
+    // DoTerminate() timeout for a flush
+    flush_timeout_ms = static_cast<int64_t>(
+        zeek::id::find_val<zeek::IntervalVal>("Cluster::Backend::NATS::flush_timeout")->Get() * 1000);
 }
 
 void NATSBackend::DoTerminate() {
@@ -201,6 +205,8 @@ void NATSBackend::DoTerminate() {
 
     if ( logger_queue_subscription )
         natsSubscription_Destroy(logger_queue_subscription);
+
+    natsConnection_FlushTimeout(conn, flush_timeout_ms);
 
     natsConnection_Destroy(conn);
 
