@@ -203,6 +203,8 @@ void NATSBackend::DoTerminate() {
         natsSubscription_Destroy(logger_queue_subscription);
 
     natsConnection_Destroy(conn);
+
+    ThreadedBackend::DoTerminate();
 }
 
 bool NATSBackend::DoInit() {
