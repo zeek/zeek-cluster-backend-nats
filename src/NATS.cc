@@ -91,9 +91,26 @@ void NATSBackend::HandleSubscriptionMessage(natsSubscription* sub, natsMsg* msg)
     QueueForProcessing(std::move(qm));
 }
 void NATSBackend::HandleSubscriptionError(natsSubscription* sub, natsStatus err) {
-    // What should we do here?>
-    std::fprintf(stderr, "[NATS] error: subscription error for %s (%p): %s\n", natsSubscription_GetSubject(sub), sub,
-                 natsStatus_GetText(err));
+    const char* subject = natsSubscription_GetSubject(sub);
+    if ( err == NATS_SLOW_CONSUMER ) {
+        int msgs, bytes, max_msgs, max_bytes;
+        int64_t delivered, dropped;
+
+        natsStatus status = natsSubscription_GetStats(sub, &msgs, &bytes, &max_msgs, &max_bytes, &delivered, &dropped);
+        if ( status != NATS_OK ) {
+            std::fprintf(stderr, "[NATS] error: could not get subscription stats: %s\n", natsStatus_GetText(status));
+            return;
+        }
+
+        std::fprintf(stderr,
+                     "SLOW CONSUMER %s msgs=%d bytes=%d max_msgs=%d max_bytes=%d delivered=%" PRId64
+                     " dropped=%" PRId64,
+                     subject, msgs, bytes, max_msgs, max_bytes, delivered, dropped);
+    }
+    else {
+        std::fprintf(stderr, "[NATS] error: subscription error for %s (%p): %s\n", subject, sub,
+                     natsStatus_GetText(err));
+    }
 }
 
 void NATSBackend::HandleConnectionCallback(ConnectionEvent ev) {
@@ -389,6 +406,13 @@ bool NATSBackend::TrySubscribe(const std::string& topic_prefix, natsSubscription
     if ( status = natsConnection_Subscribe(sub, conn, topic_prefix.c_str(), subscription_handler_cb, this);
          status != NATS_OK ) {
         zeek::reporter->Error("Subscription for %s failed: %s", topic_prefix.c_str(), nats_GetLastError(nullptr));
+        return false;
+    }
+
+    // Set subscription limits
+    if ( status = natsSubscription_SetPendingLimits(*sub, 500 * 1024, 2 * 65536 * 1024); status != NATS_OK ) {
+        zeek::reporter->Error("Could not set limits on subscription: %s: %s", topic_prefix.c_str(),
+                              nats_GetLastError(nullptr));
         return false;
     }
 
