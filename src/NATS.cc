@@ -71,7 +71,7 @@ void NATSBackend::HandleSubscriptionMessage(natsSubscription* sub, natsMsg* msg)
     size_t payload_size = natsMsg_GetDataLength(msg);
 
     // Copy data for generic processing on the mainloop.
-    cluster::detail::byte_buffer payload = {raw_payload, raw_payload + payload_size};
+    byte_buffer payload = {raw_payload, raw_payload + payload_size};
 
     std::string format;
     const char* raw_format = nullptr;
@@ -263,8 +263,7 @@ bool NATSBackend::DoInit() {
 }
 
 
-bool NATSBackend::DoPublishEvent(const std::string& topic, const std::string& format,
-                                 const cluster::detail::byte_buffer& buf) {
+bool NATSBackend::DoPublishEvent(const std::string& topic, const std::string& format, const byte_buffer& buf) {
     if ( ! Connected() ) {
         // Should be a metric!
         zeek::reporter->Warning("PublishEvent: Connection failed: %s", nats_GetLastError(nullptr));
@@ -344,7 +343,7 @@ bool NATSBackend::DoUnsubscribe(const std::string& topic_prefix) {
 }
 
 bool NATSBackend::DoPublishLogWrites(const logging::detail::LogWriteHeader& header, const std::string& format,
-                                     cluster::detail::byte_buffer& buf) {
+                                     byte_buffer& buf) {
     // TODO: Should the string version of stream_id just be part of the LogWriteHeader?
     auto stream_id_num = header.stream_id->AsEnum();
     const char* stream_id = header.stream_id->GetType()->AsEnumType()->Lookup(stream_id_num);
