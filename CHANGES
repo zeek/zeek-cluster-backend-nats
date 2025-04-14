@@ -1,3 +1,31 @@
+0.0.2 | 2025-04-14 12:44:55 +0200
+
+  * ci: Add nats-server (Arne Welzel, Corelight)
+
+  * Add some smoke tests (Arne Welzel, Corelight)
+
+  * Pass name to ThreadedBackend (Arne Welzel, Corelight)
+
+  * configure.plugin: Allow passing libnats root directory (Arne Welzel, Corelight)
+
+  * scripts: Fix duplicate hello messages due to racing (Arne Welzel, Corelight)
+
+  * Flush connection during DoTerminate() (Arne Welzel, Corelight)
+
+  * Call super class DoTerminate() to remove OnLoop (Arne Welzel, Corelight)
+
+  * Move nats into frameworks/cluster/backend (Arne Welzel, Corelight)
+
+  * Make compatible with Zeek 7.2 development (Arne Welzel, Corelight)
+
+  * ci: Poor man's CI (Arne Welzel, Corelight)
+
+  * Copyright in config.h.in (Arne Welzel, Corelight)
+
+  * Remove unneeded Plugin.h file (Arne Welzel, Corelight)
+
+  * Switch Instantiate to unique_ptr (Arne Welzel, Corelight)
+
 0.0.1 | 2024-11-12 19:24:42 +0100
 
   * Initial commit

@@ -135,23 +135,43 @@ event Cluster::Backend::NATS::reconnected()
 # Cluster::hello() so it knows we're here, too :-)
 event Cluster::Backend::NATS::hello(name: string, id: string)
 	{
-	if ( name in Cluster::nodes )
+	if ( name !in Cluster::nodes )
 		{
-		local n = Cluster::nodes[name];
-		if ( n?$id )
-			{
-			Reporter::warning(fmt("node '%s' never said goodbye (old id:%s new id:%s",
-			                  name, n$id, id));
-
-			# We raise node_down() here for the old instance,
-			# but it's obviously fake and somewhat lying.
-			event Cluster::node_down(name, n$id);
-			}
+		Reporter::warning(fmt("NATS::hello from unexpected node '%s' id: %s", name, id));
+		return;
 		}
 
-	Cluster::publish(Cluster::nodeid_topic(id), Cluster::hello, Cluster::node, Cluster::node_id());
+	local n = Cluster::nodes[name];
+	local new_node = F;
+	if ( ! n?$id )
+		{
+		# First time we see this node come up, reply with
+		# Cluster::hello() so it knows about us.
+		new_node = T;
+		}
+	else if ( n$id == id )
+		{
+		# This node raced with the other node sending a Cluster::hello()
+		# in response to this node's NATS::hello(). All good, just
+		# ignore it and move on.
+		}
+	else if ( n$id != id )
+		{
+		Reporter::warning(fmt("node '%s' never said goodbye (old id:%s new id:%s",
+				  name, n$id, id));
 
-	event Cluster::hello(name, id);
+		# Locally trigger goodbye for the old instance, assuming it crashed and
+		# never managed to send goodbye.
+		event Cluster::Backend::NATS::goodbye(name, n$id);
+
+		new_node = T;
+		}
+
+	if ( new_node )
+		{
+		Cluster::publish(Cluster::nodeid_topic(id), Cluster::hello, Cluster::node, Cluster::node_id());
+		event Cluster::hello(name, id);
+		}
 	}
 
 # Some node properly said bye on the discovery topic, raise node_down()
@@ -159,7 +179,7 @@ event Cluster::Backend::NATS::goodbye(name: string, id: string)
 	{
 	if ( name !in Cluster::nodes )
 		{
-		Reporter::warning(fmt("goodbye from unexpected node '%s' id: %s", name, id));
+		Reporter::warning(fmt("NATS::goodbye from unexpected node '%s' id: %s", name, id));
 		return;
 		}
 
