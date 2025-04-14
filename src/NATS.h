@@ -20,7 +20,7 @@ class NATSBackend : public cluster::ThreadedBackend {
 public:
     NATSBackend(std::unique_ptr<EventSerializer> es, std::unique_ptr<LogSerializer> ls,
                 std::unique_ptr<cluster::detail::EventHandlingStrategy> ehs)
-        : cluster::ThreadedBackend(std::move(es), std::move(ls), std::move(ehs)) {}
+        : cluster::ThreadedBackend("NATS", std::move(es), std::move(ls), std::move(ehs)) {}
 
     void HandleSubscriptionMessage(natsSubscription* sub, natsMsg* msg);
 
