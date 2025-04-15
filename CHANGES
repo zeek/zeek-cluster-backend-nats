@@ -1,3 +1,7 @@
+0.0.3 | 2025-04-15 09:52:46 +0200
+
+  * Fix uses of byte_buffer to the new namespace (Tim Wojtulewicz, Corelight)
+
 0.0.2 | 2025-04-14 12:44:55 +0200
 
   * ci: Add nats-server (Arne Welzel, Corelight)

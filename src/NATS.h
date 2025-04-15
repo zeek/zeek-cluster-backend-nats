@@ -46,15 +46,14 @@ private:
 
     void DoTerminate() override;
 
-    bool DoPublishEvent(const std::string& topic, const std::string& format,
-                        const cluster::detail::byte_buffer& buf) override;
+    bool DoPublishEvent(const std::string& topic, const std::string& format, const byte_buffer& buf) override;
 
     bool DoSubscribe(const std::string& topic_prefix, SubscribeCallback cb) override;
 
     bool DoUnsubscribe(const std::string& topic_prefix) override;
 
     bool DoPublishLogWrites(const logging::detail::LogWriteHeader& header, const std::string& format,
-                            cluster::detail::byte_buffer& buf) override;
+                            byte_buffer& buf) override;
 
     bool Connected() const { return conn != nullptr; }
 
