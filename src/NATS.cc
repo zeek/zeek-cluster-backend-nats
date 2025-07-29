@@ -88,8 +88,9 @@ void NATSBackend::HandleSubscriptionMessage(natsSubscription* sub, natsMsg* msg)
 
     natsMsg_Destroy(msg);
 
-    QueueForProcessing(std::move(qm));
+    OnLoop()->QueueForProcessing(std::move(qm));
 }
+
 void NATSBackend::HandleSubscriptionError(natsSubscription* sub, natsStatus err) {
     // What should we do here?>
     std::fprintf(stderr, "[NATS] error: subscription error for %s (%p): %s\n", natsSubscription_GetSubject(sub), sub,
